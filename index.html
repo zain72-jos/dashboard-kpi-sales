@@ -3,845 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DASHBOARD KPI SALES - Memantau Kinerja Penjualan</title>
+    <title>DASHBOARD KPI SALES - Google Sheets Connected</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PapaParse for Google Sheets CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        brand: {
-                            50: '#eef6ff',
-                            100: '#e0edff',
-                            500: '#1d4ed8',
-                            600: '#1e40af',
-                            700: '#1d3557',
-                            800: '#0f2744',
-                            900: '#0a192f',
-                        }
+                        navy: { 900: '#0F172A', 800: '#1E293B', 700: '#1E3A8A', 600: '#2563EB', 500: '#3B82F6' }
                     }
                 }
             }
         }
     </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-6">
 
-    <!-- Top Navigation / Header -->
-    <header class="bg-brand-900 text-white shadow-lg sticky top-0 z-30">
-        <div class="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 lg:px-8">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                
-                <!-- Logo & Title -->
-                <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-blue-600 rounded-lg text-white">
-                        <i class="fa-solid me-1 fa-chart-line text-2xl"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-baseline space-x-2">
-                            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">DASHBOARD KPI SALES</h1>
-                        </div>
-                        <p class="text-xs text-slate-300">Memantau Kinerja Penjualan untuk Pertumbuhan Bisnis yang Lebih Baik</p>
-                    </div>
+    <!-- TOP HEADER BAR -->
+    <header class="bg-navy-900 text-white rounded-xl p-4 md:p-6 mb-6 shadow-lg flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <i class="fa-solid me-1 fa-chart-line text-blue-400 text-3xl"></i>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">DASHBOARD KPI SALES</h1>
+                    <p class="text-xs md:text-sm text-slate-300">Memantau Kinerja Penjualan untuk Pertumbuhan Bisnis yang Lebih Baik</p>
                 </div>
-
-                <!-- Filters & Controls -->
-                <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-                    <!-- Date Filter -->
-                    <div class="flex items-center bg-brand-800 border border-slate-700 rounded-lg px-2.5 py-1.5 space-x-2">
-                        <i class="fa-regular fa-calendar text-slate-300"></i>
-                        <span class="text-slate-400 text-xs hidden sm:inline">Periode:</span>
-                        <input type="date" id="startDate" value="2025-01-01" class="bg-transparent text-white focus:outline-none text-xs cursor-pointer">
-                        <span class="text-slate-400">s/d</span>
-                        <input type="date" id="endDate" value="2025-12-31" class="bg-transparent text-white focus:outline-none text-xs cursor-pointer">
-                    </div>
-
-                    <!-- Sales Select -->
-                    <div class="flex items-center bg-brand-800 border border-slate-700 rounded-lg px-2.5 py-1.5 space-x-1.5">
-                        <span class="text-slate-400 text-xs">Sales:</span>
-                        <select id="salesFilter" class="bg-transparent text-white focus:outline-none text-xs font-medium cursor-pointer">
-                            <option value="ALL" class="text-slate-900">Semua Sales</option>
-                            <option value="Andi" class="text-slate-900">Andi</option>
-                            <option value="Budi" class="text-slate-900">Budi</option>
-                            <option value="Citra" class="text-slate-900">Citra</option>
-                            <option value="Dewi" class="text-slate-900">Dewi</option>
-                            <option value="Eka" class="text-slate-900">Eka</option>
-                            <option value="Fajar" class="text-slate-900">Fajar</option>
-                        </select>
-                    </div>
-
-                    <!-- Product Select -->
-                    <div class="flex items-center bg-brand-800 border border-slate-700 rounded-lg px-2.5 py-1.5 space-x-1.5">
-                        <span class="text-slate-400 text-xs">Produk:</span>
-                        <select id="productFilter" class="bg-transparent text-white focus:outline-none text-xs font-medium cursor-pointer">
-                            <option value="ALL" class="text-slate-900">Semua Produk</option>
-                            <option value="Elektronik" class="text-slate-900">Elektronik</option>
-                            <option value="Fashion" class="text-slate-900">Fashion</option>
-                            <option value="Home Living" class="text-slate-900">Home Living</option>
-                            <option value="Sport & Outdoor" class="text-slate-900">Sport & Outdoor</option>
-                            <option value="Beauty & Health" class="text-slate-900">Beauty & Health</option>
-                        </select>
-                    </div>
-
-                    <!-- Google Sheets Connect Button -->
-                    <button id="openSheetsModal" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-medium transition shadow text-xs">
-                        <i class="fa-solid fa-file-excel text-sm"></i>
-                        <span>Konek Google Sheets</span>
-                    </button>
-                </div>
-
             </div>
+        </div>
+
+        <!-- FILTERS & ACTIONS -->
+        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div class="bg-navy-800/80 p-2 rounded-lg border border-slate-700 text-xs flex items-center gap-2">
+                <i class="fa-regular fa-calendar text-blue-400"></i>
+                <span id="periodeLabel">Periode: 01/01/2025 s/d 31/12/2025</span>
+            </div>
+            
+            <button onclick="openConfigModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs md:text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition shadow">
+                <i class="fa-solid fa-file-excel"></i>
+                <span id="connStatus">Konek Google Sheets</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Content Body -->
-    <main class="flex-grow max-w-[1600px] w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-
-        <!-- Banner Sync Status / Source Notification -->
-        <div id="statusBanner" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-3 flex items-center justify-between text-xs sm:text-sm">
-            <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
-                <span id="statusText">Terhubung dengan Google Sheets. Data diperbarui secara otomatis.</span>
+    <!-- METRICS CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase">Realisasi Bersih</span>
+                <i class="fa-solid fa-wallet text-blue-600 bg-blue-50 p-2 rounded-lg"></i>
             </div>
-            <button id="resetDataBtn" class="text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-2.5 py-1 rounded font-semibold transition">
-                Gunakan Demo Data
-            </button>
+            <div class="text-lg md:text-xl font-extrabold text-slate-900" id="mRealisasi">Rp 0</div>
+            <div class="text-[11px] text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-up"></i> 12.5% vs lalu</div>
+        </div>
+        <!-- Card 2 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase">Target Penjualan</span>
+                <i class="fa-solid fa-bullseye text-emerald-600 bg-emerald-50 p-2 rounded-lg"></i>
+            </div>
+            <div class="text-lg md:text-xl font-extrabold text-slate-900" id="mTarget">Rp 0</div>
+            <div class="text-[11px] text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-up"></i> 8.3% vs lalu</div>
+        </div>
+        <!-- Card 3 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase">Pencapaian Target</span>
+                <i class="fa-solid fa-percent text-purple-600 bg-purple-50 p-2 rounded-lg"></i>
+            </div>
+            <div class="text-lg md:text-xl font-extrabold text-slate-900" id="mPencapaian">0%</div>
+            <div class="text-[11px] text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-up"></i> 4.2% vs lalu</div>
+        </div>
+        <!-- Card 4 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase">Gap vs Target</span>
+                <i class="fa-solid fa-chart-line-down text-orange-600 bg-orange-50 p-2 rounded-lg"></i>
+            </div>
+            <div class="text-lg md:text-xl font-extrabold text-slate-900" id="mGap">Rp 0</div>
+            <div class="text-[11px] text-red-500 font-medium mt-1"><i class="fa-solid fa-arrow-down"></i> -11.7% vs lalu</div>
+        </div>
+        <!-- Card 5 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase">Jumlah Order</span>
+                <i class="fa-solid fa-cart-shopping text-cyan-600 bg-cyan-50 p-2 rounded-lg"></i>
+            </div>
+            <div class="text-lg md:text-xl font-extrabold text-slate-900">1,250</div>
+            <div class="text-[11px] text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-up"></i> 15.4% vs lalu</div>
+        </div>
+        <!-- Card 6 -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase">AOV</span>
+                <i class="fa-solid fa-receipt text-indigo-600 bg-indigo-50 p-2 rounded-lg"></i>
+            </div>
+            <div class="text-lg md:text-xl font-extrabold text-slate-900">Rp 3.880.000</div>
+            <div class="text-[11px] text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-up"></i> 8.9% vs lalu</div>
+        </div>
+    </div>
+
+    <!-- MAIN GRAPHICS SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Realisasi vs Target per Sales (Bar Chart) -->
+        <div class="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-slate-800 text-base">Realisasi vs Target Penjualan per Sales</h2>
+            </div>
+            <div class="h-64 md:h-72">
+                <canvas id="salesBarChart"></canvas>
+            </div>
         </div>
 
-        <!-- 1. TOP SUMMARY METRICS (6 CARDS) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            
-            <!-- Realisasi Penjualan -->
-            <div class="bg-white rounded-xl p-4 card-shadow border border-slate-100 relative overflow-hidden flex flex-col justify-between">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Realisasi Penjualan Bersih</p>
-                        <h3 id="cardRealisasi" class="text-xl font-extrabold text-slate-800 mt-1">Rp 4.850.000.000</h3>
-                    </div>
-                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-                        <i class="fa-solid fa-money-bill-wave text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-3 flex items-center text-xs text-emerald-600 font-semibold">
-                    <i class="fa-solid fa-caret-up mr-1 text-sm"></i>
-                    <span>12,5%</span>
-                    <span class="text-slate-400 font-normal ml-1">vs. periode sebelumnya</span>
-                </div>
+        <!-- Kontribusi Penjualan per Produk (Donut Chart) -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-slate-800 text-base">Kontribusi Penjualan per Produk</h2>
             </div>
-
-            <!-- Target Penjualan -->
-            <div class="bg-white rounded-xl p-4 card-shadow border border-slate-100 relative overflow-hidden flex flex-col justify-between">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Target Penjualan</p>
-                        <h3 id="cardTarget" class="text-xl font-extrabold text-slate-800 mt-1">Rp 5.500.000.000</h3>
-                    </div>
-                    <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <i class="fa-solid fa-bullseye text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-3 flex items-center text-xs text-emerald-600 font-semibold">
-                    <i class="fa-solid fa-caret-up mr-1 text-sm"></i>
-                    <span>8,3%</span>
-                    <span class="text-slate-400 font-normal ml-1">vs. periode sebelumnya</span>
-                </div>
-            </div>
-
-            <!-- Pencapaian Target -->
-            <div class="bg-white rounded-xl p-4 card-shadow border border-slate-100 relative overflow-hidden flex flex-col justify-between">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Pencapaian Target</p>
-                        <h3 id="cardPencapaian" class="text-xl font-extrabold text-slate-800 mt-1">88,2%</h3>
-                    </div>
-                    <div class="p-2.5 bg-purple-50 text-purple-600 rounded-lg">
-                        <i class="fa-solid fa-percent text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-3 flex items-center text-xs text-emerald-600 font-semibold">
-                    <i class="fa-solid fa-caret-up mr-1 text-sm"></i>
-                    <span>4,2%</span>
-                    <span class="text-slate-400 font-normal ml-1">vs. periode sebelumnya</span>
-                </div>
-            </div>
-
-            <!-- Gap vs Target -->
-            <div class="bg-white rounded-xl p-4 card-shadow border border-slate-100 relative overflow-hidden flex flex-col justify-between">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Gap vs Target</p>
-                        <h3 id="cardGap" class="text-xl font-extrabold text-slate-800 mt-1">Rp 650.000.000</h3>
-                    </div>
-                    <div class="p-2.5 bg-orange-50 text-orange-600 rounded-lg">
-                        <i class="fa-solid fa-chart-line-down text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-3 flex items-center text-xs text-rose-500 font-semibold">
-                    <i class="fa-solid fa-caret-down mr-1 text-sm"></i>
-                    <span>11,7%</span>
-                    <span class="text-slate-400 font-normal ml-1">vs. periode sebelumnya</span>
-                </div>
-            </div>
-
-            <!-- Jumlah Order -->
-            <div class="bg-white rounded-xl p-4 card-shadow border border-slate-100 relative overflow-hidden flex flex-col justify-between">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Jumlah Order</p>
-                        <h3 id="cardOrder" class="text-xl font-extrabold text-slate-800 mt-1">1.250</h3>
-                    </div>
-                    <div class="p-2.5 bg-teal-50 text-teal-600 rounded-lg">
-                        <i class="fa-solid fa-receipt text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-3 flex items-center text-xs text-emerald-600 font-semibold">
-                    <i class="fa-solid fa-caret-up mr-1 text-sm"></i>
-                    <span>15,4%</span>
-                    <span class="text-slate-400 font-normal ml-1">vs. periode sebelumnya</span>
-                </div>
-            </div>
-
-            <!-- AOV -->
-            <div class="bg-white rounded-xl p-4 card-shadow border border-slate-100 relative overflow-hidden flex flex-col justify-between">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">AOV (Avg Order Value)</p>
-                        <h3 id="cardAov" class="text-xl font-extrabold text-slate-800 mt-1">Rp 3.880.000</h3>
-                    </div>
-                    <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <i class="fa-solid fa-bag-shopping text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-3 flex items-center text-xs text-emerald-600 font-semibold">
-                    <i class="fa-solid fa-caret-up mr-1 text-sm"></i>
-                    <span>8,9%</span>
-                    <span class="text-slate-400 font-normal ml-1">vs. periode sebelumnya</span>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- 2. CHARTS SECTION -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- Bar Chart: Realisasi vs Target Penjualan per Sales -->
-            <div class="lg:col-span-7 bg-white rounded-xl p-5 card-shadow border border-slate-100 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-base font-bold text-slate-800">Realisasi vs Target Penjualan per Sales</h2>
-                    <div class="flex items-center space-x-4 text-xs font-medium">
-                        <span class="flex items-center"><span class="w-3 h-3 bg-blue-600 rounded-sm mr-1.5 inline-block"></span> Realisasi</span>
-                        <span class="flex items-center"><span class="w-3 h-3 bg-amber-400 rounded-sm mr-1.5 inline-block"></span> Target</span>
-                    </div>
-                </div>
-                <div class="relative flex-grow min-h-[300px]">
-                    <canvas id="salesBarChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Donut Chart: Kontribusi Penjualan per Produk -->
-            <div class="lg:col-span-5 bg-white rounded-xl p-5 card-shadow border border-slate-100 flex flex-col">
-                <h2 class="text-base font-bold text-slate-800 mb-4">Kontribusi Penjualan per Produk</h2>
-                <div class="flex flex-col sm:flex-row items-center justify-center flex-grow gap-4">
-                    <div class="relative w-52 h-52 sm:w-60 sm:h-60 flex-shrink-0">
-                        <canvas id="productDonutChart"></canvas>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-xs text-slate-400 font-medium">Total Penjualan</span>
-                            <span id="donutTotalText" class="text-base font-extrabold text-slate-800">Rp 4.85 M</span>
-                        </div>
-                    </div>
-                    <!-- Custom Chart Legend List -->
-                    <div id="donutLegend" class="w-full space-y-2 text-xs">
-                        <!-- JS Dynamic Insert Legend -->
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- 3. TABLES SECTION -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- Left Column Tables: Kinerja KPI Sales & Top 5 Produk -->
-            <div class="lg:col-span-7 space-y-6">
-                
-                <!-- Table 1: Kinerja KPI per Sales -->
-                <div class="bg-white rounded-xl card-shadow border border-slate-100 overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100">
-                        <h2 class="text-base font-bold text-slate-800">Kinerja KPI per Sales</h2>
-                    </div>
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-brand-900 text-white font-semibold">
-                                    <th class="py-3 px-4 text-center w-12">No</th>
-                                    <th class="py-3 px-4">Nama Sales</th>
-                                    <th class="py-3 px-4 text-right">Realisasi (Rp)</th>
-                                    <th class="py-3 px-4 text-right">Target (Rp)</th>
-                                    <th class="py-3 px-4 text-center">Pencapaian</th>
-                                    <th class="py-3 px-4 text-right">Gap (Rp)</th>
-                                    <th class="py-3 px-4 text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="salesTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Table 2: Top 5 Produk dengan Penjualan Tertinggi -->
-                <div class="bg-white rounded-xl card-shadow border border-slate-100 overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100">
-                        <h2 class="text-base font-bold text-slate-800">Top 5 Produk dengan Penjualan Tertinggi</h2>
-                    </div>
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-brand-900 text-white font-semibold">
-                                    <th class="py-3 px-4 text-center w-12">No</th>
-                                    <th class="py-3 px-4">Kode Produk</th>
-                                    <th class="py-3 px-4">Nama Produk</th>
-                                    <th class="py-3 px-4 text-right">Penjualan (Rp)</th>
-                                    <th class="py-3 px-4 text-center">Kontribusi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="topProductsTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Right Column Table & Insights: Tren Penjualan per Bulan & Insight Cards -->
-            <div class="lg:col-span-5 space-y-6">
-                
-                <!-- Table 3: Tren Realisasi Penjualan per Bulan -->
-                <div class="bg-white rounded-xl card-shadow border border-slate-100 overflow-hidden">
-                    <div class="px-5 py-4 border-b border-slate-100">
-                        <h2 class="text-base font-bold text-slate-800">Tren Realisasi Penjualan per Bulan</h2>
-                    </div>
-                    <div class="overflow-x-auto custom-scrollbar max-h-[380px]">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead class="sticky top-0 z-10">
-                                <tr class="bg-brand-900 text-white font-semibold">
-                                    <th class="py-3 px-4">Bulan</th>
-                                    <th class="py-3 px-4 text-right">Realisasi (Rp)</th>
-                                    <th class="py-3 px-4 text-right">Target (Rp)</th>
-                                    <th class="py-3 px-4 text-center">Pencapaian</th>
-                                </tr>
-                            </thead>
-                            <tbody id="monthlyTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Strategic Insights / Actionable Notes (Seperti pada gambar referensi) -->
-                <div class="grid grid-cols-2 gap-3">
-                    
-                    <div class="bg-white rounded-xl p-3.5 card-shadow border border-slate-100 flex items-start space-x-3">
-                        <div class="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
-                            <i class="fa-solid fa-bullseye text-base"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800">Fokus</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">Meningkatkan pencapaian target dan memperkuat kontribusi produk unggulan.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-3.5 card-shadow border border-slate-100 flex items-start space-x-3">
-                        <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0">
-                            <i class="fa-solid fa-chart-line text-base"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800">Peluang</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">Optimalkan penjualan di bulan dengan pencapaian di bawah 85%.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-3.5 card-shadow border border-slate-100 flex items-start space-x-3">
-                        <div class="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
-                            <i class="fa-regular fa-lightbulb text-base"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800">Tindak Lanjut</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">Evaluasi strategi penjualan, dukung sales dengan program promosi.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-3.5 card-shadow border border-slate-100 flex items-start space-x-3">
-                        <div class="p-2 bg-purple-100 text-purple-700 rounded-lg shrink-0">
-                            <i class="fa-solid fa-flag text-base"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800">Target Berikutnya</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">Mencapai ≥ 95% pencapaian target di tahun depan.</p>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-brand-900 text-slate-400 py-3 text-xs mt-auto">
-        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div>Dashboard KPI Sales | Periode: <span class="text-slate-200 font-medium">01 Jan 2025 - 31 Des 2025</span></div>
-            <div class="font-semibold text-slate-300">Better Data | Better Decision | Higher Sales</div>
-        </div>
-    </footer>
-
-    <!-- MODAL INTEGRASI GOOGLE SHEETS -->
-    <div id="sheetsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full card-shadow overflow-hidden transform transition-all">
-            <div class="bg-brand-900 px-6 py-4 flex items-center justify-between text-white">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-link text-emerald-400"></i>
-                    <h3 class="font-bold text-base">Integrasi Google Sheets</h3>
-                </div>
-                <button id="closeSheetsModal" class="text-slate-400 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            
-            <div class="p-6 space-y-4">
-                <p class="text-xs text-slate-600 leading-relaxed">
-                    Anda dapat menghubungkan Google Spreadsheet Anda secara gratis agar dashboard ini membaca data penjualan riil Anda secara online!
-                </p>
-
-                <div class="bg-amber-50 border-l-4 border-amber-500 p-3 text-amber-800 text-xs rounded-r-lg">
-                    <p class="font-bold mb-1">Cara Publikasikan Spreadsheet:</p>
-                    <ol class="list-decimal list-inside space-y-1 text-[11px]">
-                        <li>Buka File Google Sheets Anda.</li>
-                        <li>Klik <b>File &gt; Bagikan &gt; Publikasikan ke Web</b>.</li>
-                        <li>Pilih format <b>Comma-separated values (.csv)</b> dan klik <b>Publikasikan</b>.</li>
-                        <li>Salin link CSV yang dihasilkan lalu tempel di bawah ini.</li>
-                    </ol>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">URL Publikasi CSV / Web App API</label>
-                    <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" 
-                           class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div class="pt-2 flex justify-end space-x-3">
-                    <button id="cancelModalBtn" class="px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">Batal</button>
-                    <button id="saveSheetsUrlBtn" class="px-5 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition flex items-center space-x-1.5">
-                        <i class="fa-solid fa-sync"></i>
-                        <span>Hubungkan & Sync Data</span>
-                    </button>
-                </div>
+            <div class="h-64 md:h-72 flex justify-center items-center">
+                <canvas id="prodDonutChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT APP LOGIC -->
+    <!-- TABLES SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Kinerja KPI per Sales Table -->
+        <div class="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <h2 class="font-bold text-slate-800 text-base mb-4">Kinerja KPI per Sales</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-navy-700 text-white text-xs uppercase">
+                        <tr>
+                            <th class="p-3 text-center">No</th>
+                            <th class="p-3">Nama Sales</th>
+                            <th class="p-3 text-right">Realisasi (Rp)</th>
+                            <th class="p-3 text-right">Target (Rp)</th>
+                            <th class="p-3 text-center">Pencapaian</th>
+                            <th class="p-3 text-right">Gap (Rp)</th>
+                            <th class="p-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tren Realisasi per Bulan Table -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+            <h2 class="font-bold text-slate-800 text-base mb-4">Tren Realisasi Penjualan per Bulan</h2>
+            <div class="overflow-y-auto max-h-[380px]">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-navy-700 text-white text-xs uppercase sticky top-0">
+                        <tr>
+                            <th class="p-2.5 text-center">Bulan</th>
+                            <th class="p-2.5 text-right">Realisasi (Rp)</th>
+                            <th class="p-2.5 text-right">Target (Rp)</th>
+                            <th class="p-2.5 text-center">Pencapaian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIG MODAL -->
+    <div id="configModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-link text-blue-600"></i> Hubungkan Google Sheets
+                </h3>
+                <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <p class="text-xs text-slate-600 mb-4">
+                Masukkan link <b>Publish to Web (.csv)</b> dari Google Sheets Anda untuk menyinkronkan data secara otomatis.
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">URL Google Sheets (CSV Output):</label>
+                    <input type="text" id="sheetsUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" class="w-full text-xs p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeConfigModal()" class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Batal</button>
+                <button onclick="saveAndSyncSheets()" class="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow">Simpan & Sync Data</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- 1. DEFAULT MOCK DATA (Sesuai Gambar UI Referensi) ---
-        const DEFAULT_DATA = {
-            summary: {
-                realisasi: 4850000000,
-                target: 5500000000,
-                gap: 6500000000 - 5850000000, // 650jt
-                pencapaian: 88.2,
-                jumlahOrder: 1250,
-                aov: 3880000
-            },
-            sales: [
-                { no: 1, name: "Andi", realisasi: 1250000000, target: 1400000000, pencapaian: 89.3, gap: 1500000000 - 1250000000, status: "On Track" },
-                { no: 2, name: "Budi", realisasi: 980000000, target: 1100000000, pencapaian: 89.1, gap: 120000000, status: "On Track" },
-                { no: 3, name: "Citra", realisasi: 760000000, target: 900000000, pencapaian: 84.4, gap: 140000000, status: "On Track" },
-                { no: 4, name: "Dewi", realisasi: 620000000, target: 700000000, pencapaian: 88.6, gap: 80000000, status: "On Track" },
-                { no: 5, name: "Eka", realisasi: 540000000, target: 600000000, pencapaian: 90.0, gap: 60000000, status: "On Track" },
-                { no: 6, name: "Fajar", realisasi: 410000000, target: 500000000, pencapaian: 82.0, gap: 90000000, status: "Perlu Perhatian" }
-            ],
-            products: [
-                { category: "Elektronik", amount: 1358000000, percent: 28, color: "#1d4ed8" },
-                { category: "Fashion", amount: 1067000000, percent: 22, color: "#22c55e" },
-                { category: "Home Living", amount: 873000000, percent: 18, color: "#f97316" },
-                { category: "Sport & Outdoor", amount: 728000000, percent: 15, color: "#a855f7" },
-                { category: "Beauty & Health", amount: 485000000, percent: 10, color: "#06b6d4" },
-                { category: "Lainnya", amount: 339000000, percent: 7, color: "#94a3b8" }
-            ],
-            topProducts: [
-                { no: 1, code: "PRD-001", name: "Smartphone X", amount: 750000000, share: 15.5 },
-                { no: 2, code: "PRD-002", name: "Laptop Pro", amount: 690000000, share: 14.2 },
-                { no: 3, code: "PRD-003", name: "Headphone HD", amount: 580000000, share: 12.0 },
-                { no: 4, code: "PRD-004", name: "Smartwatch", amount: 420000000, share: 8.7 },
-                { no: 5, code: "PRD-005", name: "Tablet Plus", amount: 380000000, share: 7.8 }
-            ],
-            monthly: [
-                { month: "Jan", realisasi: 380000000, target: 450000000, pencapaian: 84.4 },
-                { month: "Feb", realisasi: 420000000, target: 500000000, pencapaian: 84.0 },
-                { month: "Mar", realisasi: 460000000, target: 550000000, pencapaian: 83.6 },
-                { month: "Apr", realisasi: 520000000, target: 600000000, pencapaian: 86.7 },
-                { month: "Mei", realisasi: 610000000, target: 700000000, pencapaian: 87.1 },
-                { month: "Jun", realisasi: 670000000, target: 750000000, pencapaian: 89.3 },
-                { month: "Jul", realisasi: 720000000, target: 800000000, pencapaian: 90.0 },
-                { month: "Agu", realisasi: 780000000, target: 900000000, pencapaian: 86.7 },
-                { month: "Sep", realisasi: 850000000, target: 950000000, pencapaian: 89.5 },
-                { month: "Okt", realisasi: 900000000, target: 1000000000, pencapaian: 90.0 },
-                { month: "Nov", realisasi: 960000000, target: 1100000000, pencapaian: 87.3 },
-                { month: "Des", realisasi: 1020000000, target: 1200000000, pencapaian: 85.0 }
-            ]
-        };
+        // DEFAULT FALLBACK MOCK DATA
+        let defaultSales = [
+            { name: 'Andi', real: 1250000000, target: 1400000000 },
+            { name: 'Budi', real: 980000000, target: 1100000000 },
+            { name: 'Citra', real: 760000000, target: 900000000 },
+            { name: 'Dewi', real: 620000000, target: 700000000 },
+            { name: 'Eka', real: 540000000, target: 600000000 },
+            { name: 'Fajar', real: 410000000, target: 500000000 }
+        ];
 
-        let currentData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        let salesChartInstance = null;
-        let productChartInstance = null;
+        let defaultMonths = [
+            { month: 'Jan', real: 380000000, target: 450000000 },
+            { month: 'Feb', real: 420000000, target: 500000000 },
+            { month: 'Mar', real: 460000000, target: 550000000 },
+            { month: 'Apr', real: 520000000, target: 600000000 },
+            { month: 'Mei', real: 610000000, target: 700000000 },
+            { month: 'Jun', real: 670000000, target: 750000000 },
+            { month: 'Jul', real: 720000000, target: 800000000 },
+            { month: 'Agu', real: 780000000, target: 900000000 },
+            { month: 'Sep', real: 850000000, target: 950000000 },
+            { month: 'Okt', real: 900000000, target: 1000000000 },
+            { month: 'Nov', real: 960000000, target: 1100000000 },
+            { month: 'Des', real: 1020000000, target: 1200000000 }
+        ];
 
-        // --- 2. HELPER UTILITIES ---
-        const formatRupiah = (number) => {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                maximumFractionDigits: 0
-            }).format(number);
-        };
+        let defaultProducts = [
+            { name: 'Elektronik', val: 1358000000 },
+            { name: 'Fashion', val: 1067000000 },
+            { name: 'Home Living', val: 873000000 },
+            { name: 'Sport & Outdoor', val: 728000000 },
+            { name: 'Beauty & Health', val: 485000000 },
+            { name: 'Lainnya', val: 339000000 }
+        ];
 
-        const formatNumber = (num) => {
-            return new Intl.NumberFormat('id-ID').format(num);
-        };
+        let barChartInst = null;
+        let donutChartInst = null;
 
-        // Shorten big numbers for donut center text
-        const formatShortCurrency = (value) => {
-            if (value >= 1000000000) {
-                return `Rp ${(value / 1000000000).toFixed(2).replace('.', ',')} M`;
-            } else if (value >= 1000000) {
-                return `Rp ${(value / 1000000).toFixed(0)} Jt`;
-            }
-            return formatRupiah(value);
-        };
+        const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
 
-        // --- 3. RENDER FUNCTIONS ---
-        function updateSummaryCards(data) {
-            document.getElementById('cardRealisasi').textContent = formatRupiah(data.summary.realisasi);
-            document.getElementById('cardTarget').textContent = formatRupiah(data.summary.target);
-            document.getElementById('cardPencapaian').textContent = `${data.summary.pencapaian.toFixed(1).replace('.', ',')}%`;
-            document.getElementById('cardGap').textContent = formatRupiah(data.summary.gap);
-            document.getElementById('cardOrder').textContent = formatNumber(data.summary.jumlahOrder);
-            document.getElementById('cardAov').textContent = formatRupiah(data.summary.aov);
-            document.getElementById('donutTotalText').textContent = formatShortCurrency(data.summary.realisasi);
+        function parseCleanNum(val) {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            let str = val.toString().replace(/Rp/gi, '').replace(/\./g, '').replace(/,/g, '.').trim();
+            return parseFloat(str) || 0;
         }
 
-        function renderSalesTable(salesData) {
-            const tbody = document.getElementById('salesTableBody');
-            tbody.innerHTML = '';
+        function initDashboard(salesData, monthData, prodData) {
+            // Metrics Calculations
+            let totReal = salesData.reduce((acc, curr) => acc + curr.real, 0);
+            let totTarget = salesData.reduce((acc, curr) => acc + curr.target, 0);
+            let pct = totTarget > 0 ? ((totReal / totTarget) * 100).toFixed(1) : 0;
+            let gap = totTarget - totReal;
 
-            salesData.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition';
-                
-                const isPerluPerhatian = item.status.toLowerCase().includes('perhatian') || item.pencapaian < 83;
-                const statusBadge = isPerluPerhatian
-                    ? `<span class="px-2 py-1 text-[10px] font-bold text-amber-800 bg-amber-100 rounded-full">Perlu Perhatian</span>`
-                    : `<span class="px-2 py-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 rounded-full">On Track</span>`;
+            document.getElementById('mRealisasi').innerText = formatIDR(totReal);
+            document.getElementById('mTarget').innerText = formatIDR(totTarget);
+            document.getElementById('mPencapaian').innerText = `\${pct}%`;
+            document.getElementById('mGap').innerText = formatIDR(gap);
 
-                tr.innerHTML = `
-                    <td class="py-2.5 px-4 text-center text-slate-500">${item.no}</td>
-                    <td class="py-2.5 px-4 font-semibold text-slate-800">${item.name}</td>
-                    <td class="py-2.5 px-4 text-right">${formatNumber(item.realisasi)}</td>
-                    <td class="py-2.5 px-4 text-right">${formatNumber(item.target)}</td>
-                    <td class="py-2.5 px-4 text-center font-bold">${item.pencapaian.toFixed(1).replace('.', ',')}%</td>
-                    <td class="py-2.5 px-4 text-right text-slate-600">${formatNumber(item.gap)}</td>
-                    <td class="py-2.5 px-4 text-center">${statusBadge}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+            // Render Sales Table
+            let salesTbody = document.getElementById('salesTableBody');
+            salesTbody.innerHTML = '';
+            salesData.forEach((s, idx) => {
+                let p = s.target > 0 ? (s.real / s.target) * 100 : 0;
+                let g = s.target - s.real;
+                let isTrack = p >= 85;
 
-        function renderTopProductsTable(products) {
-            const tbody = document.getElementById('topProductsTableBody');
-            tbody.innerHTML = '';
-
-            products.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition';
-                tr.innerHTML = `
-                    <td class="py-2.5 px-4 text-center text-slate-500">${item.no}</td>
-                    <td class="py-2.5 px-4 font-mono text-slate-600">${item.code}</td>
-                    <td class="py-2.5 px-4 font-semibold text-slate-800">${item.name}</td>
-                    <td class="py-2.5 px-4 text-right">${formatNumber(item.amount)}</td>
-                    <td class="py-2.5 px-4 text-center font-bold text-blue-600">${item.share.toFixed(1).replace('.', ',')}%</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderMonthlyTable(monthlyData) {
-            const tbody = document.getElementById('monthlyTableBody');
-            tbody.innerHTML = '';
-
-            monthlyData.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition';
-                tr.innerHTML = `
-                    <td class="py-2.5 px-4 font-semibold text-slate-800">${item.month}</td>
-                    <td class="py-2.5 px-4 text-right">${formatNumber(item.realisasi)}</td>
-                    <td class="py-2.5 px-4 text-right text-slate-500">${formatNumber(item.target)}</td>
-                    <td class="py-2.5 px-4 text-center font-bold text-blue-700">${item.pencapaian.toFixed(1).replace('.', ',')}%</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderDonutLegend(products) {
-            const legendContainer = document.getElementById('donutLegend');
-            legendContainer.innerHTML = '';
-
-            products.forEach(prod => {
-                const item = document.createElement('div');
-                item.className = 'flex items-center justify-between text-xs py-0.5';
-                item.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${prod.color}"></span>
-                        <span class="text-slate-700 font-medium">${prod.category}</span>
-                    </div>
-                    <div class="space-x-2">
-                        <span class="font-bold text-slate-800">${formatShortCurrency(prod.amount)}</span>
-                        <span class="text-slate-500 font-semibold w-8 text-right inline-block">${prod.percent}%</span>
-                    </div>
-                `;
-                legendContainer.appendChild(item);
-            });
-        }
-
-        // --- 4. CHARTS GENERATION ---
-        function initCharts(data) {
-            // Bar Chart (Sales Realisasi vs Target)
-            const salesCtx = document.getElementById('salesBarChart').getContext('2d');
-            
-            if (salesChartInstance) salesChartInstance.destroy();
-
-            salesChartInstance = new Chart(salesCtx, {
-                type: 'bar',
-                data: {
-                    labels: data.sales.map(s => s.name),
-                    datasets: [
-                        {
-                            label: 'Realisasi',
-                            data: data.sales.map(s => s.realisasi),
-                            backgroundColor: '#1d4ed8', // Dark blue
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.6
-                        },
-                        {
-                            label: 'Target',
-                            data: data.sales.map(s => s.target),
-                            backgroundColor: '#fbbf24', // Amber/Yellow
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${formatRupiah(context.raw)}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return (value / 1000000) + 'M';
-                                },
-                                font: { size: 10 }
-                            },
-                            grid: { color: '#f1f5f9' }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11, weight: '600' } }
-                        }
-                    }
-                }
-            });
-
-            // Donut Chart (Product Contribution)
-            const productCtx = document.getElementById('productDonutChart').getContext('2d');
-            
-            if (productChartInstance) productChartInstance.destroy();
-
-            productChartInstance = new Chart(productCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.products.map(p => p.category),
-                    datasets: [{
-                        data: data.products.map(p => p.amount),
-                        backgroundColor: data.products.map(p => p.color),
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '72%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.raw;
-                                    return ` ${context.label}: ${formatRupiah(value)}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Entire Dashboard Refresh Routine
-        function updateDashboard(data) {
-            updateSummaryCards(data);
-            renderSalesTable(data.sales);
-            renderTopProductsTable(data.topProducts);
-            renderMonthlyTable(data.monthly);
-            renderDonutLegend(data.products);
-            initCharts(data);
-        }
-
-        // --- 5. FILTER HANDLERS (Client-side simulation) ---
-        function applyFilters() {
-            const selectedSales = document.getElementById('salesFilter').value;
-            const selectedProduct = document.getElementById('productFilter').value;
-
-            let filteredSales = [...currentData.sales];
-
-            if (selectedSales !== 'ALL') {
-                filteredSales = filteredSales.filter(s => s.name === selectedSales);
-            }
-
-            renderSalesTable(filteredSales);
-
-            // Dynamically adjust Bar Chart for filtered sales
-            salesChartInstance.data.labels = filteredSales.map(s => s.name);
-            salesChartInstance.data.datasets[0].data = filteredSales.map(s => s.realisasi);
-            salesChartInstance.data.datasets[1].data = filteredSales.map(s => s.target);
-            salesChartInstance.update();
-        }
-
-        document.getElementById('salesFilter').addEventListener('change', applyFilters);
-        document.getElementById('productFilter').addEventListener('change', applyFilters);
-
-        // --- 6. GOOGLE SHEETS INTEGRATION LOGIC ---
-        const sheetsModal = document.getElementById('sheetsModal');
-        const openSheetsModalBtn = document.getElementById('openSheetsModal');
-        const closeSheetsModalBtn = document.getElementById('closeSheetsModal');
-        const cancelModalBtn = document.getElementById('cancelModalBtn');
-        const saveSheetsUrlBtn = document.getElementById('saveSheetsUrlBtn');
-        const sheetUrlInput = document.getElementById('sheetUrlInput');
-        const statusBanner = document.getElementById('statusBanner');
-        const statusText = document.getElementById('statusText');
-        const resetDataBtn = document.getElementById('resetDataBtn');
-
-        openSheetsModalBtn.addEventListener('click', () => sheetsModal.classList.remove('hidden'));
-        
-        const closeModal = () => sheetsModal.classList.add('hidden');
-        closeSheetsModalBtn.addEventListener('click', closeModal);
-        cancelModalBtn.addEventListener('click', closeModal);
-
-        // CSV Parser for Google Sheets CSV Export
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            if (lines.length < 2) return null;
-
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const rows = lines.slice(1).map(line => {
-                const values = line.split(',');
-                let obj = {};
-                headers.forEach((h, i) => {
-                    obj[h] = values[i] ? values[i].trim() : '';
-                });
-                return obj;
-            });
-            return rows;
-        }
-
-        // Fetch Data from Sheets CSV Link
-        async function fetchGoogleSheetsData(url) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Gagal mengambil data dari URL.");
-                
-                const csvText = await response.text();
-                const parsedRows = parseCSV(csvText);
-
-                if (parsedRows && parsedRows.length > 0) {
-                    // Update Status UI
-                    statusBanner.classList.remove('hidden');
-                    statusText.textContent = "Berhasil tersinkronisasi dengan Google Sheets!";
-                    closeModal();
-
-                    // Optional: You can map custom Google Sheet columns here if provided
-                    alert("Koneksi Sukses! Data dari Google Sheets berhasil diambil.");
-                } else {
-                    alert("Format CSV Google Sheets tidak valid atau kosong.");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Error: Tidak dapat terhubung ke URL Google Sheets. Pastikan dokumen telah dipublikasikan ke Web sebagai CSV.");
-            }
-        }
-
-        saveSheetsUrlBtn.addEventListener('click', () => {
-            const url = sheetUrlInput.value.trim();
-            if (!url) {
-                alert("Silakan masukkan URL CSV Google Sheets Anda.");
-                return;
-            }
-            fetchGoogleSheetsData(url);
-        });
-
-        resetDataBtn.addEventListener('click', () => {
-            currentData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-            updateDashboard(currentData);
-            statusBanner.classList.add('hidden');
-            sheetUrlInput.value = '';
-        });
-
-        // Initialize App on DOM Load
-        window.addEventListener('DOMContentLoaded', () => {
-            updateDashboard(currentData);
-        });
-    </script>
-</body>
-</html>
+                salesTbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 font-medium text-xs">
+                        <td class="p-3 text-center text-slate-400">\${idx + 1}</td>
+                        <td class="p-3 font-semibold text-slate-800">\${s.name}</td>
+                        <td class="p-3 text-right text-slate-700">\${formatIDR(s.real)}</td>
+                        <td class="p-3 text-right text-slate-500">\${formatIDR(s.target)}</td>
+                        <td class="p-3 text-center font-bold">\${p.toFixed(1)}%</td>
+                        <td class="p-3 text-right text-slate-600">\${formatIDR(g)}</td>
+                        <td class="p-3 text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold \${isTrack ? 'bg-emerald-100 text-
